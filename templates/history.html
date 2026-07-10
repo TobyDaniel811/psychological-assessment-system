@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}My history{% endblock %}
+
+{% block content %}
+<h2 class="page-title">My assessment history</h2>
+
+{% if results|length == 0 %}
+    <p class="auth-sub">You haven't taken the survey yet.</p>
+    <a href="{{ url_for('survey') }}" class="btn btn-primary">Take the survey</a>
+{% else %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Predicted condition</th>
+                <th>Confidence</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in results %}
+                <tr>
+                    <td class="muted">{{ row.created_at }}</td>
+                    <td style="font-weight:600;">{{ row.predicted_condition }}</td>
+                    <td>{{ row.confidence_percent }}%</td>
+                    <td><a href="{{ url_for('result', result_id=row.id) }}">View</a></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}PsychAssess — Behavioural Survey and Psychological Assessment System{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <span class="hero-eyebrow">Final Year Research Project</span>
+    <h1>Behavioural <span class="accent-word">Survey</span> &amp;<br>Psychological <span class="accent-word">Assessment</span></h1>
+    <p class="hero-sub">
+        A web-based platform that uses machine learning to analyse your
+        survey responses and provide an intelligent assessment of your
+        psychological well-being profile.
+    </p>
+
+    <div class="hero-actions">
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('survey') }}" class="btn btn-primary">Start Assessment</a>
+            <a href="{{ url_for('history') }}" class="btn btn-secondary">My History</a>
+        {% else %}
+            <a href="{{ url_for('register') }}" class="btn btn-primary">Get started</a>
+            <a href="{{ url_for('login') }}" class="btn btn-secondary">I already have an account</a>
+        {% endif %}
+    </div>
+</section>
+
+<div class="info-grid">
+    <div class="info-card">
+        <span class="info-num">01</span>
+        <h3>Register &amp; Login</h3>
+        <p>Create a secure account so your assessment history is saved.</p>
+    </div>
+    <div class="info-card">
+        <span class="info-num">02</span>
+        <h3>Complete Survey</h3>
+        <p>Answer 10 short questions about your mood, sleep, and stress.</p>
+    </div>
+    <div class="info-card">
+        <span class="info-num">03</span>
+        <h3>ML Classification</h3>
+        <p>A trained Random Forest model analyses your responses instantly.</p>
+    </div>
+    <div class="info-card">
+        <span class="info-num">04</span>
+        <h3>View Results</h3>
+        <p>Get a clear, plain-language assessment with a confidence score.</p>
+    </div>
+</div>
+{% endblock %}

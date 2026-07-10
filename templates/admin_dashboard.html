@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Admin dashboard{% endblock %}
+
+{% block content %}
+<h2 class="page-title">Admin dashboard</h2>
+<p class="auth-sub" style="margin-top:-14px; margin-bottom:24px;">
+    System-wide overview of registered users and assessments.
+</p>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Registered students</div>
+        <div class="stat-value">{{ total_users }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Surveys completed</div>
+        <div class="stat-value">{{ total_assessments }}</div>
+    </div>
+</div>
+
+<h3 style="font-size:1rem; margin-bottom:12px;">Condition breakdown</h3>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Predicted condition</th>
+            <th>Count</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in condition_breakdown %}
+            <tr>
+                <td>{{ row.predicted_condition }}</td>
+                <td>{{ row.count }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3 style="font-size:1rem; margin:28px 0 12px;">Recent assessments</h3>
+{% if recent_assessments|length == 0 %}
+    <p class="auth-sub">No assessments have been submitted yet.</p>
+{% else %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Predicted condition</th>
+                <th>Confidence</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in recent_assessments %}
+                <tr>
+                    <td>{{ row.username }}</td>
+                    <td>{{ row.predicted_condition }}</td>
+                    <td>{{ row.confidence_percent }}%</td>
+                    <td class="muted">{{ row.created_at }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+{% endblock %}

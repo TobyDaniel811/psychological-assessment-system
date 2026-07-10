@@ -1,0 +1,19 @@
+# Database - don't push your local test data
+database.db
+
+# Python cache
+__pycache__/
+*.pyc
+app/__pycache__/
+
+# Virtual environment (if you have one)
+.venv/
+venv/
+env/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/

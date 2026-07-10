@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Your assessment{% endblock %}
+
+{% block content %}
+<section class="result-card">
+    <p class="hero-eyebrow">Your Assessment</p>
+    <div class="result-condition" style="color: {{ condition_info.colour }};">
+        {{ condition_info.icon }} {{ predicted_condition }}
+    </div>
+    <p class="result-confidence">{{ confidence_percent }}% confidence · {{ created_at }}</p>
+
+    {% if condition_info.what_it_means %}
+    <div class="result-explain">
+        <p>{{ condition_info.what_it_means }}</p>
+    </div>
+    {% endif %}
+
+    {% if condition_info.signs %}
+    <div class="result-subheading">
+        <h3>Common signs</h3>
+        <ul>
+            {% for sign in condition_info.signs %}
+                <li>{{ sign }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if condition_info.what_to_do %}
+    <div class="result-subheading">
+        <h3>What you can do</h3>
+        <ul>
+            {% for tip in condition_info.what_to_do %}
+                <li>{{ tip }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="result-subheading">
+        <h3>Full probability breakdown</h3>
+        {% for item in probability_breakdown %}
+            <div class="prob-bar-row">
+                <span class="prob-bar-label">{{ item.condition }}</span>
+                <div class="prob-bar-track">
+                    <div class="prob-bar-fill" style="width:{{ item.probability_percent }}%;"></div>
+                </div>
+                <span class="prob-bar-value">{{ item.probability_percent }}%</span>
+            </div>
+        {% endfor %}
+    </div>
+
+    <p class="result-disclaimer">
+        This is an automated screening result, not a clinical diagnosis.
+        If you are concerned about your mental health, please speak with
+        a qualified professional or your campus counselling service.
+    </p>
+
+    <div class="hero-actions">
+        <a href="{{ url_for('survey') }}" class="btn btn-secondary">Take it again</a>
+        <a href="{{ url_for('history') }}" class="btn btn-primary">View my history</a>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Take the survey{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom:4px;">A few questions about the past two weeks</h2>
+<p class="auth-sub">All 10 questions are required. Answer honestly — there are no wrong answers.</p>
+
+<form method="POST" action="{{ url_for('survey') }}">
+    {% for question in questions %}
+        <div class="survey-question">
+            <label for="q{{ loop.index }}">
+                <span class="survey-q-num">Q{{ loop.index }}</span>
+                {{ question.label }}
+            </label>
+            <select id="q{{ loop.index }}" name="{{ question.key }}" required>
+                <option value="" disabled selected>Select an answer…</option>
+                {% for option in question.options %}
+                    <option value="{{ option }}">{{ option }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    {% endfor %}
+
+    <button type="submit" class="btn btn-primary btn-full">Get my assessment</button>
+</form>
+{% endblock %}

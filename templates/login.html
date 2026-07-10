@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+
+{% block content %}
+<section class="auth-card">
+    <h2>Welcome back</h2>
+    <p class="auth-sub">Log in to take a survey or view your history.</p>
+
+    <form method="POST" action="{{ url_for('login') }}">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required autocomplete="username">
+
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required autocomplete="current-password">
+
+        <button type="submit" class="btn btn-primary btn-full">Log in</button>
+    </form>
+
+    <p class="auth-switch">
+        No account yet? <a href="{{ url_for('register') }}">Register</a>
+    </p>
+</section>
+{% endblock %}
