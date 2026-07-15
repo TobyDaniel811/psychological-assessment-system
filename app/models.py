@@ -54,6 +54,32 @@ class User(UserMixin):
             return None
         return User(row["id"], row["username"], row["email"],
                      row["password_hash"], row["role"])
+    
+    @staticmethod
+    def get_by_email(email):
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute(
+            "SELECT * FROM users WHERE email = %s",
+            (email,)
+        )
+
+        row = cur.fetchone()
+
+        cur.close()
+        conn.close()
+
+        if row is None:
+            return None
+
+        return User(
+            row["id"],
+            row["username"],
+            row["email"],
+            row["password_hash"],
+            row["role"]
+        )
 
     @staticmethod
     def create(username, email, password, role="user"):

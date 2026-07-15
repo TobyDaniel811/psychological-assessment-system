@@ -345,6 +345,10 @@ def register():
             flash("That username is already taken.", "error")
             return redirect(url_for("register"))
 
+        if User.get_by_email(email) is not None:
+            flash("An account with that email already exists.", "error")
+            return redirect(url_for("register"))
+
         User.create(username, email, password, role="user")
         flash("Account created successfully. Please log in.", "success")
         return redirect(url_for("login"))
@@ -363,20 +367,17 @@ def login():
 
         user = User.get_by_username(username)
 
-        if user is None:
-            return {"stage": "user_not_found"}
-
-        if not user.check_password(password):
-            return {"stage": "password_incorrect"}
+        if user is None or not user.check_password(password):
+            flash("Incorrect username or password.", "error")
+            return redirect(url_for("login"))
 
         login_user(user)
+        flash(f"Welcome back, {user.username}!", "success")
 
-        return {
-            "stage": "logged_in",
-            "current_user": current_user.username,
-            "role": current_user.role,
-            "authenticated": current_user.is_authenticated
-        }
+        if user.role == "admin":
+            return redirect(url_for("admin_dashboard"))
+
+        return redirect(url_for("home"))
 
     return render_template("login.html")
 
@@ -614,42 +615,5 @@ def admin_dashboard():
 # ----------------------------------------------------------------------
 # Entry point
 # ----------------------------------------------------------------------
-@app.route("/debug-users")
-def debug_users():
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT id,
-               username,
-               email,
-               role,
-               created_at
-        FROM users
-        ORDER BY id;
-    """)
-
-    users = cur.fetchall()
-
-    cur.close()
-    conn.close()
-
-    return {"users": users}
-
-@app.route("/debug-password/<username>/<password>")
-def debug_password(username, password):
-    user = User.get_by_username(username)
-
-    if user is None:
-        return {"exists": False}
-
-    return {
-        "exists": True,
-        "username": user.username,
-        "password_matches": user.check_password(password),
-        "role": user.role
-    }
-
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True, port=5000)
