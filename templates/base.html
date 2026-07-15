@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}PsychAssess{% endblock %}</title>
+    <title>{% block title %}MindScreen{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
     <nav class="navbar">
-        <a href="{{ url_for('home') }}" class="nav-brand">PsychAssess</a>
+        <a href="{{ url_for('home') }}" class="nav-brand">MindScreen</a>
         <div class="nav-links">
             {% if current_user.is_authenticated %}
                 <a href="{{ url_for('survey') }}">Take Survey</a>
