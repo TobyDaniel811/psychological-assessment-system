@@ -358,17 +358,24 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form.get("username", "")
+        username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
 
         user = User.get_by_username(username)
 
+        if user is None:
+            return {"stage": "user_not_found"}
+
+        if not user.check_password(password):
+            return {"stage": "password_incorrect"}
+
+        login_user(user)
+
         return {
-            "submitted_username": username,
-            "submitted_password": password,
-            "user_exists": user is not None,
-            "password_matches": user.check_password(password) if user else False,
-            "role": user.role if user else None
+            "stage": "logged_in",
+            "current_user": current_user.username,
+            "role": current_user.role,
+            "authenticated": current_user.is_authenticated
         }
 
     return render_template("login.html")
