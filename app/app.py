@@ -358,21 +358,18 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form.get("username", "").strip()
+        username = request.form.get("username", "")
         password = request.form.get("password", "")
 
         user = User.get_by_username(username)
 
-        if user is None or not user.check_password(password):
-            flash("Incorrect username or password.", "error")
-            return redirect(url_for("login"))
-
-        login_user(user)
-        flash(f"Welcome back, {user.username}!", "success")
-
-        if user.role == "admin":
-            return redirect(url_for("home"))
-        return redirect(url_for("home"))
+        return {
+            "submitted_username": username,
+            "submitted_password": password,
+            "user_exists": user is not None,
+            "password_matches": user.check_password(password) if user else False,
+            "role": user.role if user else None
+        }
 
     return render_template("login.html")
 
