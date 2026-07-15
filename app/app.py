@@ -33,38 +33,21 @@ app = Flask(
     template_folder=os.path.join(BASE_DIR, "templates"),
     static_folder=os.path.join(BASE_DIR, "static"),
 )
-app.secret_key = "dev-secret-key-change-this-before-deployment"
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-this-before-deployment")
 
 # --- Flask-Login setup ---
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = "login"          # where to redirect if @login_required fails
+login_manager.login_view = "login"
 login_manager.login_message = "Please log in to access that page."
 
 
 @login_manager.user_loader
 def load_user(user_id):
-    """Flask-Login calls this on every request to reload the user object
-    from the id stored in the session cookie."""
     return User.get_by_id(user_id)
 
 
 def admin_required(view_func):
-    """
-    Custom decorator that builds on top of @login_required.
-    Must be used TOGETHER with @login_required, and placed BELOW it,
-    e.g.:
-
-        @app.route("/admin")
-        @login_required
-        @admin_required
-        def admin_dashboard():
-            ...
-
-    If the logged-in user's role is not 'admin', they are redirected
-    home with a flash message instead of seeing the page or getting
-    a raw 403 error.
-    """
     from functools import wraps
 
     @wraps(view_func)
@@ -77,17 +60,11 @@ def admin_required(view_func):
     return wrapped
 
 
-# Ensures the database tables exist whether the app is started via
-# `python app/app.py`, `flask run`, or a production WSGI server -- not
-# only through the __main__ block below.
 init_db()
 
 
 # ----------------------------------------------------------------------
 # CONDITION EXPLANATIONS
-# Plain-language descriptions shown on the result page.
-# Each entry has: icon, colour, summary, what_it_means, signs, what_to_do.
-# Written in behavioural assessment language -- NOT clinical diagnosis.
 # ----------------------------------------------------------------------
 CONDITION_INFO = {
     "Mood Disorders": {
@@ -352,7 +329,6 @@ def register():
         password = request.form.get("password", "")
         confirm  = request.form.get("confirm_password", "")
 
-        # --- Basic server-side validation ---
         if not username or not email or not password:
             flash("All fields are required.", "error")
             return redirect(url_for("register"))
@@ -369,7 +345,6 @@ def register():
             flash("That username is already taken.", "error")
             return redirect(url_for("register"))
 
-        # --- Create the user ---
         User.create(username, email, password, role="user")
         flash("Account created successfully. Please log in.", "success")
         return redirect(url_for("login"))
@@ -396,8 +371,8 @@ def login():
         flash(f"Welcome back, {user.username}!", "success")
 
         if user.role == "admin":
-            return redirect(url_for("home"))   # admin dashboard route added later
-        return redirect(url_for("home"))        # survey dashboard route added later
+            return redirect(url_for("home"))
+        return redirect(url_for("home"))
 
     return render_template("login.html")
 
@@ -416,9 +391,6 @@ def logout():
 # ----------------------------------------------------------------------
 # SURVEY QUESTION ORDER
 # ----------------------------------------------------------------------
-# This fixed order controls the order questions appear on the form.
-# Short labels are what the user sees; the dict key is the FULL column
-# name the predictor.py / model actually expects.
 SURVEY_QUESTIONS = [
     {
         "key": "Mood: How would you describe your mood over the past two weeks?",
@@ -474,7 +446,6 @@ SURVEY_QUESTIONS = [
 
 
 def get_question_options(question):
-    """Returns the ordered list of valid answer text for a question dict."""
     if question["type"] == "ordinal":
         mapping = ordinal_maps[question["key"]]
         return sorted(mapping, key=mapping.get)
@@ -489,9 +460,6 @@ def get_question_options(question):
 @login_required
 def survey():
     if request.method == "POST":
-        # Build the answers dict using the SAME full column-name keys
-        # that predictor.py expects -- the <select name="..."> values
-        # in survey.html are set to these exact keys.
         answers = {}
         for question in SURVEY_QUESTIONS:
             value = request.form.get(question["key"])
@@ -508,18 +476,19 @@ def survey():
 
         # --- Save the raw answers ---
         conn = get_connection()
-        cur = conn.execute(
-            "INSERT INTO survey_responses (user_id, answers_json) VALUES (?, ?)",
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO survey_responses (user_id, answers_json) VALUES (%s, %s) RETURNING id",
             (current_user.id, json.dumps(answers))
         )
+        response_id = cur.fetchone()["id"]
         conn.commit()
-        response_id = cur.lastrowid
 
         # --- Save the prediction tied to that response ---
-        cur = conn.execute(
+        cur.execute(
             "INSERT INTO assessment_results "
             "(response_id, user_id, predicted_condition, confidence_percent, probability_json) "
-            "VALUES (?, ?, ?, ?, ?)",
+            "VALUES (%s, %s, %s, %s, %s) RETURNING id",
             (
                 response_id,
                 current_user.id,
@@ -528,8 +497,9 @@ def survey():
                 json.dumps(result["probability_breakdown"]),
             )
         )
+        result_id = cur.fetchone()["id"]
         conn.commit()
-        result_id = cur.lastrowid
+        cur.close()
         conn.close()
 
         return redirect(url_for("result", result_id=result_id))
@@ -547,10 +517,13 @@ def survey():
 @login_required
 def result(result_id):
     conn = get_connection()
-    row = conn.execute(
-        "SELECT * FROM assessment_results WHERE id = ? AND user_id = ?",
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT * FROM assessment_results WHERE id = %s AND user_id = %s",
         (result_id, current_user.id)
-    ).fetchone()
+    )
+    row = cur.fetchone()
+    cur.close()
     conn.close()
 
     if row is None:
@@ -577,11 +550,14 @@ def result(result_id):
 @login_required
 def history():
     conn = get_connection()
-    rows = conn.execute(
+    cur = conn.cursor()
+    cur.execute(
         "SELECT id, predicted_condition, confidence_percent, created_at "
-        "FROM assessment_results WHERE user_id = ? ORDER BY created_at DESC",
+        "FROM assessment_results WHERE user_id = %s ORDER BY created_at DESC",
         (current_user.id,)
-    ).fetchall()
+    )
+    rows = cur.fetchall()
+    cur.close()
     conn.close()
     return render_template("history.html", results=rows)
 
@@ -594,30 +570,32 @@ def history():
 @admin_required
 def admin_dashboard():
     conn = get_connection()
+    cur = conn.cursor()
 
-    total_users = conn.execute(
-        "SELECT COUNT(*) AS count FROM users WHERE role = 'user'"
-    ).fetchone()["count"]
+    cur.execute("SELECT COUNT(*) AS count FROM users WHERE role = 'user'")
+    total_users = cur.fetchone()["count"]
 
-    total_assessments = conn.execute(
-        "SELECT COUNT(*) AS count FROM assessment_results"
-    ).fetchone()["count"]
+    cur.execute("SELECT COUNT(*) AS count FROM assessment_results")
+    total_assessments = cur.fetchone()["count"]
 
-    condition_breakdown = conn.execute(
+    cur.execute(
         "SELECT predicted_condition, COUNT(*) AS count "
         "FROM assessment_results "
         "GROUP BY predicted_condition "
         "ORDER BY count DESC"
-    ).fetchall()
+    )
+    condition_breakdown = cur.fetchall()
 
-    recent_assessments = conn.execute(
+    cur.execute(
         "SELECT u.username, ar.predicted_condition, ar.confidence_percent, ar.created_at "
         "FROM assessment_results ar "
         "JOIN users u ON u.id = ar.user_id "
         "ORDER BY ar.created_at DESC "
         "LIMIT 20"
-    ).fetchall()
+    )
+    recent_assessments = cur.fetchall()
 
+    cur.close()
     conn.close()
 
     return render_template(
@@ -632,6 +610,28 @@ def admin_dashboard():
 # ----------------------------------------------------------------------
 # Entry point
 # ----------------------------------------------------------------------
+@app.route("/debug-users")
+def debug_users():
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id,
+               username,
+               email,
+               role,
+               created_at
+        FROM users
+        ORDER BY id;
+    """)
+
+    users = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return {"users": users}
+
 if __name__ == "__main__":
-    init_db()   # safe to call every time -- only creates tables if missing
+    init_db()
     app.run(debug=True, port=5000)
