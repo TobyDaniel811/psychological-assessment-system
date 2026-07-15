@@ -632,6 +632,20 @@ def debug_users():
 
     return {"users": users}
 
+@app.route("/debug-password/<username>/<password>")
+def debug_password(username, password):
+    user = User.get_by_username(username)
+
+    if user is None:
+        return {"exists": False}
+
+    return {
+        "exists": True,
+        "username": user.username,
+        "password_matches": user.check_password(password),
+        "role": user.role
+    }
+
 if __name__ == "__main__":
     init_db()
     app.run(debug=True, port=5000)
